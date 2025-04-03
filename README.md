@@ -35,7 +35,7 @@ tar -xzvf model_checkpoints.tar.gz
 
 ## 2. Inference
 
-To run RibbonFold inference, you need to prepare a MSA file for your input sequence (monomer) and specify the file of this path in the following script. The MSA file can be generated using the standard AF2's pipeline.
+To run RibbonFold inference, you need to prepare a MSA file for your input sequence (monomer) and specify the file of this path in the following script. 
 
 The MSA file can be generated from AlphaFold2's MSA search pipeline.
 
