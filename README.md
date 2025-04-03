@@ -25,8 +25,8 @@ pip install pandas==1.3.5 scipy==1.5.4 biopython dm-tree treelib tqdm ml_collect
 ```
 
 
-### Unzip checkpoint files
-Unzip the checkpoints and place them into ./ckpt folder:
+### Download model weights
+Download the model weights from https://zenodo.org/records/15128410 and unzip the file into ./ckpt folder:
 
 ```bash
 tar -xzvf model_checkpoints.tar.gz
