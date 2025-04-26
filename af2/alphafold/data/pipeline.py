@@ -20,7 +20,7 @@ from absl import logging
 from alphafold.common import residue_constants
 from alphafold.data import msa_identifiers
 from alphafold.data import parsers
-from alphafold.data import templates
+#from alphafold.data import templates
 from alphafold.data.tools import hhblits
 from alphafold.data.tools import hhsearch
 from alphafold.data.tools import hmmsearch
@@ -32,7 +32,7 @@ import numpy as np
 # Internal import (7716).
 
 FeatureDict = MutableMapping[str, np.ndarray]
-TemplateSearcher = Union[hhsearch.HHSearch, hmmsearch.Hmmsearch]
+#TemplateSearcher = Union[hhsearch.HHSearch, hmmsearch.Hmmsearch]
 
 
 def make_sequence_features(
@@ -121,8 +121,8 @@ class DataPipeline:
                bfd_database_path: Optional[str],
                uniclust30_database_path: Optional[str],
                small_bfd_database_path: Optional[str],
-               template_searcher: TemplateSearcher,
-               template_featurizer: templates.TemplateHitFeaturizer,
+               #template_searcher: TemplateSearcher,
+               #template_featurizer: templates.TemplateHitFeaturizer,
                # use_small_bfd: bool,
                use_bfd:bool,
                mgnify_max_hits: int = 501,
@@ -156,8 +156,8 @@ class DataPipeline:
     self.jackhmmer_mgnify_runner = jackhmmer.Jackhmmer(
         binary_path=jackhmmer_binary_path,
         database_path=mgnify_database_path)
-    self.template_searcher = template_searcher
-    self.template_featurizer = template_featurizer
+    #self.template_searcher = template_searcher
+    #self.template_featurizer = template_featurizer
     self.mgnify_max_hits = mgnify_max_hits
     self.uniref_max_hits = uniref_max_hits
     self.use_precomputed_msas = use_precomputed_msas
