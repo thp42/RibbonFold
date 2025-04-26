@@ -1,5 +1,6 @@
 import pickle, gzip
 import sys
+import argparse
 
 sys.path.append('./af2/')
 
@@ -36,7 +37,12 @@ def make_pkl_gz(input_fasta_path, a3m_path, output_pklgz):
 
 
 if __name__ == '__main__':
-    input_fasta_path = './examples/5oqv.fasta'
-    a3m_path = './examples/5oqv_msa.a3m'
-    output_pklgz = './examples/5oqv_msa.pkl.gz'
-    make_pkl_gz(input_fasta_path, a3m_path, output_pklgz)
+    parser = argparse.ArgumentParser(description="Convert FASTA and MSA (a3m) to PKL.GZ file.")
+    
+    parser.add_argument("--input_fasta", type=str, required=True, help="Input FASTA file path")
+    parser.add_argument("--msa_file", type=str, required=True, help="Input MSA (a3m) file path")
+    parser.add_argument("--output", type=str, required=True, help="Output PKL.GZ file path")
+    
+    args = parser.parse_args()
+    
+    make_pkl_gz(args.input_fasta, args.msa_file, args.output)
