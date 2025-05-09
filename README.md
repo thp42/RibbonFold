@@ -19,7 +19,7 @@ Install the following dependencies:
 
 ```bash
 conda install -y cudatoolkit=11.8 -c nvidia
-pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torch==2.0.1+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html
 pip install torchtyping==0.1.4 functorch tensorflow-cpu==2.6.0 tensorflow-estimator==2.14.0
 pip install pandas==1.3.5 scipy==1.5.4 biopython dm-tree treelib tqdm ml_collections pytz python-dateutil contextlib2 PyYAML --no-deps
 ```
