@@ -8,6 +8,7 @@ from datetime import datetime
 import copy
 from Bio.PDB import PDBParser
 import argparse
+import json
 
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
@@ -213,6 +214,30 @@ def inference(batchX, alphafold_model, save_pdb_prefix, pred_t, ret_dict=None, s
         if mean_plddt > highest_plddt:
             highest_plddt = mean_plddt
             highest_plddt_idx = i
+        
+        # Save confidence data for each recycle as JSON
+        confidence_file = save_pdb_prefix.replace('_infer', f'_{pred_t}_rec{i}_confidence.json')
+        confidence_data = {
+            'recycle': i,
+            'plddt': plddt.tolist(),
+            'max_plddt': float(np.max(plddt)),
+            'min_plddt': float(np.min(plddt)),
+            'mean_plddt': float(mean_plddt)
+        }
+        
+        # Add PAE data if available
+        if 'predicted_aligned_error' in ret_dict:
+            pae_logits = ret_dict['predicted_aligned_error']['logits'].cpu().numpy()
+            pae_breaks = ret_dict['predicted_aligned_error']['breaks'].cpu().numpy()
+            pae_data = aux_heads.compute_predicted_aligned_error(pae_logits, pae_breaks)
+            confidence_data['pae'] = pae_data['predicted_aligned_error'].tolist()
+            confidence_data['max_pae'] = float(pae_data['max_predicted_aligned_error'])
+        
+        # Save JSON file
+        with open(confidence_file, 'w') as f:
+            json.dump(confidence_data, f, indent=2)
+        
+        print(f"Saved confidence data for recycle {i} to: {confidence_file}", file=LOG)
 
 
         non_ensembled_batch = {
@@ -335,13 +360,97 @@ def process_and_inference(alphafold_model, test_file, savedir, pred_t, init_stru
     af2_run.save_as_pdb(batchX['aatype'].cpu().numpy(), batchX['residue_index'].cpu().numpy(),
                         final_atom_positions.numpy(), final_atom_mask.numpy(), pd_file,
                         b_factors=plddt_37, asym_id=batchX['asym_id'].cpu().numpy()-1)
+    
+    # Save confidence data as JSON
+    confidence_file = os.path.join(savedir, f'{chain_name}_confidence_{pred_t}.json')
+    confidence_data = {
+        'plddt': plddt.tolist(),
+        'max_plddt': float(np.max(plddt)),
+        'min_plddt': float(np.min(plddt)),
+        'mean_plddt': float(np.mean(plddt))
+    }
+    
+    # Add PAE data if available
+    if 'predicted_aligned_error' in ret:
+        pae_logits = ret['predicted_aligned_error']['logits'].cpu().numpy()
+        pae_breaks = ret['predicted_aligned_error']['breaks'].cpu().numpy()
+        pae_data = aux_heads.compute_predicted_aligned_error(pae_logits, pae_breaks)
+        confidence_data['pae'] = pae_data['predicted_aligned_error'].tolist()
+        confidence_data['max_pae'] = float(pae_data['max_predicted_aligned_error'])
+    
+    # Save JSON file
+    with open(confidence_file, 'w') as f:
+        json.dump(confidence_data, f, indent=2)
+    
+    print(f"Saved confidence data to: {confidence_file}")
+    
     # Save Ground Truth
     if batchY is not None:
         af2_run.save_as_pdb(batchY['aatype'].cpu().numpy(), batchY['residue_index'].cpu().numpy(),
                                  batchY['all_atom_positions'].cpu().numpy(),
                                  batchY['all_atom_mask'].cpu().numpy(), gt_file, asym_id=batchX['asym_id'].cpu().numpy()-1)
+    
+    # Return information about this prediction for best model selection
+    return {
+        'pred_id': pred_t,
+        'chain_name': chain_name,
+        'mean_plddt': float(np.mean(plddt)),
+        'confidence_file': confidence_file,
+        'pdb_file': pd_file,
+        'plddt_scores': plddt.tolist()
+    }
 
 
+
+
+def find_and_save_best_model(savedir: str, all_results: list):
+    """
+    Find the best model based on highest mean pLDDT and save summary information.
+    
+    Args:
+        savedir: Output directory
+        all_results: List of result dictionaries from process_and_inference
+    """
+    if not all_results:
+        print("No results to analyze")
+        return
+    
+    # Find best model by highest mean pLDDT
+    best_result = max(all_results, key=lambda x: x['mean_plddt'])
+    
+    print(f"\n=== BEST MODEL SUMMARY ===")
+    print(f"Best model: Sample {best_result['pred_id']}")
+    print(f"Mean pLDDT: {best_result['mean_plddt']:.2f}")
+    print(f"PDB file: {best_result['pdb_file']}")
+    print(f"Confidence file: {best_result['confidence_file']}")
+    
+    # Save best model summary
+    best_summary = {
+        'best_model': best_result,
+        'all_results': all_results,
+        'ranking': sorted(all_results, key=lambda x: x['mean_plddt'], reverse=True)
+    }
+    
+    summary_file = os.path.join(savedir, 'best_model_summary.json')
+    with open(summary_file, 'w') as f:
+        json.dump(best_summary, f, indent=2)
+    
+    print(f"Best model summary saved to: {summary_file}")
+    
+    # Create symbolic links or copies for easy access to best model
+    try:
+        import shutil
+        best_pdb_link = os.path.join(savedir, f"{best_result['chain_name']}_best.pdb")
+        best_conf_link = os.path.join(savedir, f"{best_result['chain_name']}_best_confidence.json")
+        
+        shutil.copy2(best_result['pdb_file'], best_pdb_link)
+        shutil.copy2(best_result['confidence_file'], best_conf_link)
+        
+        print(f"Best model copied to: {best_pdb_link}")
+        print(f"Best confidence copied to: {best_conf_link}")
+        
+    except Exception as e:
+        print(f"Could not create best model copies: {e}")
 
 
 def parse_args():
@@ -378,7 +487,7 @@ if __name__ == "__main__":
 
     # load model
     alphafold_model = AlphaFold.AlphaFoldIteration(enable_template=True,
-                                                   use_predicted_aligned_error_head=False,
+                                                   use_predicted_aligned_error_head=True,
                                                    use_experimentally_resolved_head=False).cuda().eval()
     ckpt_filename = args.checkpoint
     state_dict = torch.load(ckpt_filename, map_location='cuda:0')
@@ -411,11 +520,16 @@ if __name__ == "__main__":
 
 
     # run inference
+    all_results = []
     for t in range(args.rounds):
         print(f'run sample {t}...')
-        process_and_inference(alphafold_model, processed_feature_file, savedir, t, init_structure=init_struc_file,
+        result_info = process_and_inference(alphafold_model, processed_feature_file, savedir, t, init_structure=init_struc_file,
                               random_mode=args.msa_random_mode, ens_id=None, msa_max_cluster=64, msa_max_extra=128,
                               run_dropout=run_dropout, recycles=args.recycles)
+        all_results.append(result_info)
+    
+    # Find and save best model information
+    find_and_save_best_model(savedir, all_results)
 
 
 
