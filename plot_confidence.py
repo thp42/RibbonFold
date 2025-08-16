@@ -262,7 +262,8 @@ def create_confidence_plots(results_dir: str, output_prefix: str = None) -> Dict
     return plot_files
 
 
-if __name__ == "__main__":
+def main():
+    """Main function for command line usage"""
     import argparse
     
     parser = argparse.ArgumentParser(description="Create confidence plots for RibbonFold results")
@@ -276,3 +277,7 @@ if __name__ == "__main__":
     print("\nGenerated plots:")
     for plot_type, plot_file in plots.items():
         print(f"  {plot_type}: {plot_file}")
+
+
+if __name__ == "__main__":
+    main()
