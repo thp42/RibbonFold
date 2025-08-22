@@ -215,29 +215,7 @@ def inference(batchX, alphafold_model, save_pdb_prefix, pred_t, ret_dict=None, s
             highest_plddt = mean_plddt
             highest_plddt_idx = i
         
-        # Save confidence data for each recycle as JSON
-        confidence_file = save_pdb_prefix.replace('_infer', f'_{pred_t}_rec{i}_confidence.json')
-        confidence_data = {
-            'recycle': i,
-            'plddt': plddt.tolist(),
-            'max_plddt': float(np.max(plddt)),
-            'min_plddt': float(np.min(plddt)),
-            'mean_plddt': float(mean_plddt)
-        }
-        
-        # Add PAE data if available
-        if 'predicted_aligned_error' in ret_dict:
-            pae_logits = ret_dict['predicted_aligned_error']['logits'].cpu().numpy()
-            pae_breaks = ret_dict['predicted_aligned_error']['breaks'].cpu().numpy()
-            pae_data = aux_heads.compute_predicted_aligned_error(pae_logits, pae_breaks)
-            confidence_data['pae'] = pae_data['predicted_aligned_error'].tolist()
-            confidence_data['max_pae'] = float(pae_data['max_predicted_aligned_error'])
-        
-        # Save JSON file
-        with open(confidence_file, 'w') as f:
-            json.dump(confidence_data, f, indent=2)
-        
-        print(f"Saved confidence data for recycle {i} to: {confidence_file}", file=LOG)
+        # Skip saving recycle JSON files - only save final result
 
 
         non_ensembled_batch = {
