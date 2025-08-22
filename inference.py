@@ -502,7 +502,8 @@ if __name__ == "__main__":
     for t in range(args.rounds):
         print(f'run sample {t}...')
         result_info = process_and_inference(alphafold_model, processed_feature_file, savedir, t, init_structure=init_struc_file,
-                              random_mode=args.msa_random_mode, ens_id=None, msa_max_cluster=64, msa_max_extra=128,
+                              #random_mode=args.msa_random_mode, ens_id=None, msa_max_cluster=64, msa_max_extra=128,
+                              random_mode=args.msa_random_mode, ens_id=None, msa_max_cluster=256, msa_max_extra=1024,
                               run_dropout=run_dropout, recycles=args.recycles)
         all_results.append(result_info)
     
