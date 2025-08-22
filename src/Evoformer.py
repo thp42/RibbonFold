@@ -12,8 +12,8 @@ import time
 import datetime
 
 USE_SUBBATCH = True
-SUBBATCH_SIZE = 128
-GLOBAL_SUBBATCH_SIZE = 1
+SUBBATCH_SIZE = 512        # Increased from 128 for A100 (4x faster attention)
+GLOBAL_SUBBATCH_SIZE = 4   # Increased from 1 for A100 (4x faster global ops)
 RUN_LOW_MEMORY = False
 DISABLE_TQDM = True
 
